@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login System - GTA Tournament</title>
     <!-- Font & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Pricedown&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -16,7 +16,6 @@
             --accent-cyan: #66fcf1;
             --text-light: #c5c6c7;
             --text-white: #ffffff;
-            --border-color: #45a29e;
         }
 
         * {
@@ -49,16 +48,6 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(243, 156, 18, 0.2);
             text-align: center;
             position: relative;
-        }
-
-        .login-card::before {
-            content: '';
-            position: absolute;
-            top: -2px; left: -2px; right: -2px; bottom: -2px;
-            background: linear-gradient(45deg, var(--accent-gold), transparent, var(--accent-gold));
-            border-radius: 12px;
-            z-index: -1;
-            opacity: 0.5;
         }
 
         .gta-logo {
@@ -225,20 +214,16 @@
 
     <script>
         // =========================================================================
-        // 1. PENGATURAN DATABASE & DISCORD WEBHOOK (GANTI URL DI SINI)
+        // 1. URL RAW DATABASE GITHUB DISESUAIKAN DENGAN REPO KAMU
         // =========================================================================
-        
-        // Ganti dengan URL link "RAW" file database.json milikmu di GitHub
         const GITHUB_DATABASE_URL = "https://raw.githubusercontent.com/rezaputramaulana01092010-cmyk/Sertifikat2/main/database.json";
 
-        // Ganti dengan URL Webhook Channel Discord kamu
-        const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1546645810417115176/fM0INx-byj88ITPpHbwD-iPuEcNsz-33rEfRiD8ECyRDHLYIwTIkpx0NTYFNS82MeRxi";
+        // Isikan Webhook Discord milikmu di sini jika ingin dipakai
+        const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1547712306534940743/L-gD3axIX75F1u8_X4XBpl-AKxaHBjuK6ioa4Rkm9QAaumisYHd5xOBXzJfDyY5CXN5b";
 
         // =========================================================================
         // 2. DETEKSI INFORMASI PERANGKAT & DEVICE ID
         // =========================================================================
-
-        // Generate ID Unik Permanen di HP/Browser (localStorage)
         function getOrCreateDeviceId() {
             let deviceId = localStorage.getItem('gta_device_id');
             if (!deviceId) {
@@ -248,7 +233,6 @@
             return deviceId;
         }
 
-        // Deteksi Tipe HP / Operating System & Browser
         function getDeviceName() {
             const ua = navigator.userAgent;
             let os = "Unknown OS";
@@ -276,7 +260,7 @@
         // 3. KIRIM NOTIFIKASI PEMANTAUAN KE DISCORD
         // =========================================================================
         function sendDiscordLog(username, status, detailMsg) {
-            if (!DISCORD_WEBHOOK_URL || DISCORD_WEBHOOK_URL.includes("1234567890")) return;
+            if (!DISCORD_WEBHOOK_URL || DISCORD_WEBHOOK_URL.trim() === "") return;
 
             const isSuccess = status === "SUCCESS";
             const payload = {
@@ -284,7 +268,7 @@
                 avatar_url: "https://i.imgur.com/4M34hi2.png",
                 embeds: [{
                     title: isSuccess ? "✅ LOGIN BERHASIL" : "🚨 LOGIN DITOLAK / DIBLOKIR",
-                    color: isSuccess ? 3066993 : 15158332, // Hijau jika sukses, Merah jika gagal
+                    color: isSuccess ? 3066993 : 15158332,
                     fields: [
                         { name: "User", value: `\`${username}\``, inline: true },
                         { name: "Device ID (HP)", value: `\`${currentDeviceId}\``, inline: true },
@@ -303,12 +287,16 @@
             }).catch(err => console.error("Discord webhook Error:", err));
         }
 
-        // Helper Tampil Pesan Alert
         function showAlert(msg, type) {
             const alertBox = document.getElementById('alertBox');
             alertBox.innerText = msg;
             alertBox.className = `alert-box alert-${type}`;
             alertBox.style.display = 'block';
+        }
+
+        function redirectHalamanUtama() {
+            // Mengalihkan otomatis ke halaman utama/sertifikat
+            window.location.href = "sertifikat.html"; 
         }
 
         // =========================================================================
@@ -323,13 +311,13 @@
             btnLogin.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memeriksa...';
 
             try {
-                // 1. Ambil data dari file database.json
+                // Fetch data dari RAW GitHub
                 const response = await fetch(GITHUB_DATABASE_URL + '?t=' + new Date().getTime());
-                if (!response.ok) throw new Error("Gagal membaca database. Check URL Raw GitHub kamu.");
+                if (!response.ok) throw new Error("Gagal membaca database.");
 
                 const usersData = await response.json();
 
-                // 2. Cari Username & Password
+                // Cek User & Password
                 const user = usersData.find(u => u.username === usernameInput && u.password === passwordInput);
 
                 if (!user) {
@@ -346,40 +334,35 @@
                     return;
                 }
 
-                // 3. LOGIKA KUNCI 1 PERANGKAT (Single Device Enforcement)
+                // Penguncian Single Device
                 const lockedUserKey = `locked_device_for_${user.username}`;
                 const registeredDeviceId = localStorage.getItem(lockedUserKey);
 
                 if (!registeredDeviceId) {
-                    // Jika pertama kali login, kunci ke HP/Browser ini
                     localStorage.setItem(lockedUserKey, currentDeviceId);
-                    showAlert("Login Berhasil! Perangkat kamu telah didaftarkan.", "success");
+                    showAlert("Login Berhasil! Mengalihkan...", "success");
                     sendDiscordLog(user.username, "SUCCESS", `Mendaftarkan perangkat baru: ${currentDeviceName}`);
 
                     setTimeout(() => {
-                        alert("Login Sukses! Mengalihkan ke Halaman Sertifikat...");
-                        // window.location.href = "generator_sertifikat_gta.html"; // Redirect
-                    }, 1500);
+                        redirectHalamanUtama();
+                    }, 1000);
 
                 } else if (registeredDeviceId === currentDeviceId) {
-                    // Jika dibuka dari HP yang sama
-                    showAlert("Login Berhasil! Selamat datang kembali.", "success");
+                    showAlert("Login Berhasil! Mengalihkan...", "success");
                     sendDiscordLog(user.username, "SUCCESS", `Login ulang dari perangkat yang sama`);
 
                     setTimeout(() => {
-                        alert("Login Sukses! Mengalihkan ke Halaman Sertifikat...");
-                        // window.location.href = "generator_sertifikat_gta.html"; // Redirect
-                    }, 1500);
+                        redirectHalamanUtama();
+                    }, 1000);
 
                 } else {
-                    // Jika di-login-kan di HP LAIN
                     showAlert("LOGIN DITOLAK! Akun ini sudah terikat di HP lain.", "danger");
-                    sendDiscordLog(user.username, "BLOCKED", `PERCOBAAN LOGIN DI HP LAIN! Device ID penyerang: ${currentDeviceId} (${currentDeviceName})`);
+                    sendDiscordLog(user.username, "BLOCKED", `PERCOBAAN LOGIN DI HP LAIN! Device ID: ${currentDeviceId} (${currentDeviceName})`);
                 }
 
             } catch (error) {
                 console.error(error);
-                showAlert("Gagal terhubung ke database. Cek koneksi internet / URL GitHub.", "danger");
+                showAlert("Gagal terhubung ke database. Cek koneksi internet.", "danger");
             }
 
             resetButton();
